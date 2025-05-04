@@ -12,6 +12,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_7_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 3.7 Sonnet latest alias
     "claude-3-7-sonnet-latest": {
@@ -19,6 +21,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_7_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 3 Opus (most powerful)
     "claude-3-opus-20240229": {
@@ -26,6 +30,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 3 Sonnet (balanced)
     "claude-3-sonnet-20240229": {
@@ -33,6 +39,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 3 Haiku (fastest)
     "claude-3-haiku-20240307": {
@@ -40,6 +48,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 3.5 Sonnet
     "claude-3-5-sonnet-20240620": {
@@ -47,6 +57,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": True,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude Instant v1 (legacy)
     "claude-instant-1.2": {
@@ -54,6 +66,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": False,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 2 (legacy)
     "claude-2.0": {
@@ -61,6 +75,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": False,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
     # Claude 2.1 (legacy)
     "claude-2.1": {
@@ -68,6 +84,8 @@ _MODEL_INFO: Dict[str, ModelInfo] = {
         "function_calling": False,
         "json_output": True,
         "family": ModelFamily.CLAUDE_3_5_SONNET,
+        "structured_output": False,
+        "multiple_system_messages": False,
     },
 }
 

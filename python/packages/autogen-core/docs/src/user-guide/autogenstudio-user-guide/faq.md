@@ -21,12 +21,14 @@ In the following sample, we will define an OpenAI, AzureOpenAI and a local model
 
 ```python
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient, OpenAIChatCompletionClient
+from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_core.models import ModelInfo
 
 model_client=OpenAIChatCompletionClient(
             model="gpt-4o-mini",
         )
 print(model_client.dump_component().model_dump_json())
+
 
 az_model_client = AzureOpenAIChatCompletionClient(
     azure_deployment="{your-azure-deployment}",
@@ -37,10 +39,16 @@ az_model_client = AzureOpenAIChatCompletionClient(
 )
 print(az_model_client.dump_component().model_dump_json())
 
+anthropic_client = AnthropicChatCompletionClient(
+        model="claude-3-sonnet-20240229",
+        api_key="your-api-key",  # Optional if ANTHROPIC_API_KEY is set in environment
+    )
+print(anthropic_client.dump_component().model_dump_json())
+
 mistral_vllm_model = OpenAIChatCompletionClient(
         model="TheBloke/Mistral-7B-Instruct-v0.2-GGUF",
         base_url="http://localhost:1234/v1",
-        model_info=ModelInfo(vision=False, function_calling=True, json_output=False, family="unknown"),
+        model_info=ModelInfo(vision=False, function_calling=True, json_output=False, family="unknown", structured_output=True),
     )
 print(mistral_vllm_model.dump_component().model_dump_json())
 ```
@@ -79,6 +87,25 @@ Azure OpenAI
 }
 ```
 
+Anthropic
+
+```json
+{
+  "provider": "autogen_ext.models.anthropic.AnthropicChatCompletionClient",
+  "component_type": "model",
+  "version": 1,
+  "component_version": 1,
+  "description": "Chat completion client for Anthropic's Claude models.",
+  "label": "AnthropicChatCompletionClient",
+  "config": {
+    "model": "claude-3-sonnet-20240229",
+    "max_tokens": 4096,
+    "temperature": 1.0,
+    "api_key": "your-api-key"
+  }
+}
+```
+
 Have a local model server like Ollama, vLLM or LMStudio that provide an OpenAI compliant endpoint? You can use that as well.
 
 ```json
@@ -95,7 +122,8 @@ Have a local model server like Ollama, vLLM or LMStudio that provide an OpenAI c
       "vision": false,
       "function_calling": true,
       "json_output": false,
-      "family": "unknown"
+      "family": "unknown",
+      "structured_output": true
     },
     "base_url": "http://localhost:1234/v1"
   }
@@ -113,6 +141,28 @@ A: If you are running the server on a remote machine (or a local machine that fa
 ```bash
 autogenstudio ui --port 8081 --host 0.0.0.0
 ```
+
+## Q: How do I use AutoGen Studio with a different database?
+
+A: By default, AutoGen Studio uses SQLite as the database. However, it uses the SQLModel library, which supports multiple database backends. You can use any database supported by SQLModel, such as PostgreSQL or MySQL. To use a different database, you need to specify the connection string for the database using the `--database-uri` argument when running the application. Example connection strings include:
+
+- SQLite: `sqlite:///database.sqlite`
+- PostgreSQL: `postgresql+psycopg://user:password@localhost/dbname`
+- MySQL: `mysql+pymysql://user:password@localhost/dbname`
+- AzureSQL: `mssql+pyodbc:///?odbc_connect=DRIVER%3D%7BODBC+Driver+17+for+SQL+Server%7D%3BSERVER%3Dtcp%3Aservername.database.windows.net%2C1433%3BDATABASE%3Ddatabasename%3BUID%3Dusername%3BPWD%3Dpassword123%3BEncrypt%3Dyes%3BTrustServerCertificate%3Dno%3BConnection+Timeout%3D30%3B`
+
+You can then run the application with the specified database URI. For example, to use PostgreSQL, you can run the following command:
+
+```bash
+autogenstudio ui --database-uri postgresql+psycopg://user:password@localhost/dbname
+```
+
+> **Note:** Make sure to install the appropriate database drivers for your chosen database:
+>
+> - PostgreSQL: `pip install psycopg2` or `pip install psycopg2-binary`
+> - MySQL: `pip install pymysql`
+> - SQL Server/Azure SQL: `pip install pyodbc`
+> - Oracle: `pip install cx_oracle`
 
 ## Q: Can I export my agent workflows for use in a python app?
 
@@ -143,7 +193,7 @@ team = BaseGroupChat.load_component(team_config)
 A: Yes, you can run AutoGen Studio in a Docker container. You can build the Docker image using the provided [Dockerfile](https://github.com/microsoft/autogen/blob/autogenstudio/samples/apps/autogen-studio/Dockerfile) and run the container using the following commands:
 
 ```bash
-FROM python:3.10
+FROM python:3.10-slim
 
 WORKDIR /code
 

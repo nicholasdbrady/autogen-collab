@@ -1,16 +1,16 @@
 import json
+import os
 import traceback
 from typing import List, Sequence, Tuple
 
 from autogen_agentchat.agents import BaseChatAgent
 from autogen_agentchat.base import Response
 from autogen_agentchat.messages import (
-    ChatMessage,
-    MultiModalMessage,
+    BaseChatMessage,
     TextMessage,
 )
 from autogen_agentchat.utils import remove_images
-from autogen_core import CancellationToken, FunctionCall
+from autogen_core import CancellationToken, Component, ComponentModel, FunctionCall
 from autogen_core.models import (
     AssistantMessage,
     ChatCompletionClient,
@@ -18,6 +18,8 @@ from autogen_core.models import (
     SystemMessage,
     UserMessage,
 )
+from pydantic import BaseModel
+from typing_extensions import Self
 
 from ._markdown_file_browser import MarkdownFileBrowser
 
@@ -31,7 +33,15 @@ from ._tool_definitions import (
 )
 
 
-class FileSurfer(BaseChatAgent):
+class FileSurferConfig(BaseModel):
+    """Configuration for FileSurfer agent"""
+
+    name: str
+    model_client: ComponentModel
+    description: str | None = None
+
+
+class FileSurfer(BaseChatAgent, Component[FileSurferConfig]):
     """An agent, used by MagenticOne, that acts as a local file previewer. FileSurfer can open and read a variety of common file types, and can navigate the local file hierarchy.
 
     Installation:
@@ -44,8 +54,12 @@ class FileSurfer(BaseChatAgent):
         name (str): The agent's name
         model_client (ChatCompletionClient): The model to use (must be tool-use enabled)
         description (str): The agent's description used by the team. Defaults to DEFAULT_DESCRIPTION
+        base_path (str): The base path to use for the file browser. Defaults to the current working directory.
 
     """
+
+    component_config_schema = FileSurferConfig
+    component_provider_override = "autogen_ext.agents.file_surfer.FileSurfer"
 
     DEFAULT_DESCRIPTION = "An agent that can handle local files."
 
@@ -62,23 +76,20 @@ class FileSurfer(BaseChatAgent):
         name: str,
         model_client: ChatCompletionClient,
         description: str = DEFAULT_DESCRIPTION,
+        base_path: str = os.getcwd(),
     ) -> None:
         super().__init__(name, description)
         self._model_client = model_client
         self._chat_history: List[LLMMessage] = []
-        self._browser = MarkdownFileBrowser(viewport_size=1024 * 5)
+        self._browser = MarkdownFileBrowser(viewport_size=1024 * 5, base_path=base_path)
 
     @property
-    def produced_message_types(self) -> Sequence[type[ChatMessage]]:
+    def produced_message_types(self) -> Sequence[type[BaseChatMessage]]:
         return (TextMessage,)
 
-    async def on_messages(self, messages: Sequence[ChatMessage], cancellation_token: CancellationToken) -> Response:
+    async def on_messages(self, messages: Sequence[BaseChatMessage], cancellation_token: CancellationToken) -> Response:
         for chat_message in messages:
-            if isinstance(chat_message, TextMessage | MultiModalMessage):
-                self._chat_history.append(UserMessage(content=chat_message.content, source=chat_message.source))
-            else:
-                raise ValueError(f"Unexpected message in FileSurfer: {chat_message}")
-
+            self._chat_history.append(chat_message.to_model_message())
         try:
             _, content = await self._generate_reply(cancellation_token=cancellation_token)
             self._chat_history.append(AssistantMessage(content=content, source=self.name))
@@ -180,3 +191,18 @@ class FileSurfer(BaseChatAgent):
             return messages
         else:
             return remove_images(messages)
+
+    def _to_config(self) -> FileSurferConfig:
+        return FileSurferConfig(
+            name=self.name,
+            model_client=self._model_client.dump_component(),
+            description=self.description,
+        )
+
+    @classmethod
+    def _from_config(cls, config: FileSurferConfig) -> Self:
+        return cls(
+            name=config.name,
+            model_client=ChatCompletionClient.load_component(config.model_client),
+            description=config.description or cls.DEFAULT_DESCRIPTION,
+        )

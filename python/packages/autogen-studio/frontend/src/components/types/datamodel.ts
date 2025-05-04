@@ -42,6 +42,7 @@ export interface FunctionExecutionResult {
 export interface BaseMessageConfig {
   source: string;
   models_usage?: RequestUsage;
+  metadata?: Record<string, string>;
 }
 
 export interface TextMessageConfig extends BaseMessageConfig {
@@ -92,6 +93,49 @@ export interface FromModuleImport {
 
 // Import can be either a string (direct import) or a FromModuleImport
 export type Import = string | FromModuleImport;
+
+// Code Executor Base Config
+export interface CodeExecutorBaseConfig {
+  timeout?: number;
+  work_dir?: string;
+}
+
+// Local Command Line Code Executor Config
+export interface LocalCommandLineCodeExecutorConfig
+  extends CodeExecutorBaseConfig {
+  functions_module?: string;
+}
+
+// Docker Command Line Code Executor Config
+export interface DockerCommandLineCodeExecutorConfig
+  extends CodeExecutorBaseConfig {
+  image?: string;
+  container_name?: string;
+  bind_dir?: string;
+  auto_remove?: boolean;
+  stop_container?: boolean;
+  functions_module?: string;
+  extra_volumes?: Record<string, Record<string, string>>;
+  extra_hosts?: Record<string, string>;
+  init_command?: string;
+}
+
+// Jupyter Code Executor Config
+export interface JupyterCodeExecutorConfig extends CodeExecutorBaseConfig {
+  kernel_name?: string;
+  output_dir?: string;
+}
+
+// Python Code Execution Tool Config
+export interface PythonCodeExecutionToolConfig {
+  executor: Component<
+    | LocalCommandLineCodeExecutorConfig
+    | DockerCommandLineCodeExecutorConfig
+    | JupyterCodeExecutorConfig
+  >;
+  description?: string;
+  name?: string;
+}
 
 // The complete FunctionToolConfig interface
 export interface FunctionToolConfig {
@@ -227,6 +271,10 @@ export interface OrTerminationConfig {
   conditions: Component<TerminationConfig>[];
 }
 
+export interface AndTerminationConfig {
+  conditions: Component<TerminationConfig>[];
+}
+
 export interface MaxMessageTerminationConfig {
   max_messages: number;
 }
@@ -248,12 +296,13 @@ export type ModelConfig =
   | AzureOpenAIClientConfig
   | AnthropicClientConfig;
 
-export type ToolConfig = FunctionToolConfig;
+export type ToolConfig = FunctionToolConfig | PythonCodeExecutionToolConfig;
 
 export type ChatCompletionContextConfig = UnboundedChatCompletionContextConfig;
 
 export type TerminationConfig =
   | OrTerminationConfig
+  | AndTerminationConfig
   | MaxMessageTerminationConfig
   | TextMentionTerminationConfig;
 
@@ -277,7 +326,7 @@ export interface DBModel {
 export interface Message extends DBModel {
   config: AgentMessageConfig;
   session_id: number;
-  run_id: string;
+  run_id: number;
 }
 
 export interface Team extends DBModel {
@@ -321,11 +370,11 @@ export interface TeamResult {
 }
 
 export interface Run {
-  id: string;
+  id: number;
   created_at: string;
   updated_at?: string;
   status: RunStatus;
-  task: AgentMessageConfig;
+  task: AgentMessageConfig[];
   team_result: TeamResult | null;
   messages: Message[];
   error_message?: string;
@@ -356,8 +405,17 @@ export interface EnvironmentVariable {
   required: boolean;
 }
 
+export interface UISettings {
+  show_llm_call_events: boolean;
+  expanded_messages_by_default?: boolean;
+  show_agent_flow_by_default?: boolean;
+  // You can add more UI settings here as needed
+}
+
 export interface SettingsConfig {
   environment: EnvironmentVariable[];
+  default_model_client?: Component<ModelConfig>;
+  ui: UISettings;
 }
 
 export interface Settings extends DBModel {
